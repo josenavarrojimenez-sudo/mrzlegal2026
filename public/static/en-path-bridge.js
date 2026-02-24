@@ -37,13 +37,30 @@
       // - label is a language token OR
       // - href contains language hint (ru/en/es) OR
       // - element already has lang-ish attributes
+      // IMPORTANT: be very conservative here. Many normal navigation links contain
+      // substrings like "/en/" or "/es/" in the href, which must NOT be treated as
+      // language switchers.
+      // We only rewrite links that are clearly the language toggle.
       var looksLikeLang =
+        // Exactly-labeled toggles
         text === 'EN' || text === 'ES' || text === 'RU' || text === 'RUS' || text === 'РУ' || text === 'РУС' ||
-        /(^|\/)(ru|en|es)(\/|$)/i.test(href) ||
+        // Explicit language attributes
+        (a.getAttribute('data-lang-switch') && /^(en|es)$/i.test(a.getAttribute('data-lang-switch'))) ||
+        (a.getAttribute('data-lang') && /^(ru|en|es)/i.test(a.getAttribute('data-lang'))) ||
         (a.getAttribute('hreflang') && /^(ru|en|es)/i.test(a.getAttribute('hreflang'))) ||
-        (a.getAttribute('lang') && /^(ru|en|es)/i.test(a.getAttribute('lang')));
+        (a.getAttribute('lang') && /^(ru|en|es)/i.test(a.getAttribute('lang'))) ||
+        // Very specific href patterns commonly used for language toggles
+        /(^|\?|&)lang=(ru|en|es)(&|$)/i.test(href) ||
+        /^\/(ru|en|es)\/?$/i.test(href) ||
+        /^\/(ru|en|es)\//i.test(href);
 
       if (!looksLikeLang) {
+        return;
+      }
+
+      // If it's a normal nav link but contains /es/ somewhere, don't touch it.
+      // We only want the actual toggle control.
+      if (text !== 'EN' && text !== 'ES' && text !== 'RU' && text !== 'RUS' && text !== 'РУ' && text !== 'РУС') {
         return;
       }
 
