@@ -21,28 +21,50 @@
   window.__mrzEsPath = esPath;
 
   function updateLangSwitcher(){
+    var target = window.__mrzEsPath || '/es/';
     var links = Array.prototype.slice.call(document.querySelectorAll('a'));
+
     links.forEach(function(a){
-      var text = (a.textContent || '').trim().toUpperCase();
-      if (text === 'EN' || text === 'ES' || text === 'RU' || text === 'RUS' || text === 'РУ' || text === 'РУС') {
-        a.textContent = 'ES';
-        // Force absolute Spanish path for CURRENT page (equivalent route)
-        a.setAttribute('href', window.__mrzEsPath || '/es/');
-        a.setAttribute('data-lang-switch', 'es');
-        a.setAttribute('hreflang', 'es');
-        a.setAttribute('lang', 'es');
-        a.setAttribute('aria-label', 'Español');
-        a.setAttribute('title', 'Español');
-        a.addEventListener(
-          'click',
-          function (ev) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            window.location.assign(window.__mrzEsPath || '/es/');
-          },
-          { capture: true }
-        );
+      // Skip links we've already handled
+      if (a && a.getAttribute && a.getAttribute('data-lang-switch') === 'es') {
+        return;
       }
+
+      var text = (a.textContent || '').trim().toUpperCase();
+      var href = (a.getAttribute('href') || '').trim();
+
+      // Only treat as language switcher if:
+      // - label is a language token OR
+      // - href contains language hint (ru/en/es) OR
+      // - element already has lang-ish attributes
+      var looksLikeLang =
+        text === 'EN' || text === 'ES' || text === 'RU' || text === 'RUS' || text === 'РУ' || text === 'РУС' ||
+        /(^|\/)(ru|en|es)(\/|$)/i.test(href) ||
+        (a.getAttribute('hreflang') && /^(ru|en|es)/i.test(a.getAttribute('hreflang'))) ||
+        (a.getAttribute('lang') && /^(ru|en|es)/i.test(a.getAttribute('lang')));
+
+      if (!looksLikeLang) {
+        return;
+      }
+
+      a.textContent = 'ES';
+      a.setAttribute('href', target);
+      a.setAttribute('data-lang-switch', 'es');
+      a.setAttribute('hreflang', 'es');
+      a.setAttribute('lang', 'es');
+      a.setAttribute('aria-label', 'Español');
+      a.setAttribute('title', 'Español');
+
+      // Capture-phase: beat Nuxt/router handlers.
+      a.addEventListener(
+        'click',
+        function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          window.location.assign(target);
+        },
+        { capture: true }
+      );
     });
   }
 
