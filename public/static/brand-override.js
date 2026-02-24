@@ -104,11 +104,63 @@
     el.childNodes.forEach(replaceText);
   };
 
+  const injectJoseNavarroBadge = () => {
+    // Replace Art Lebedev SVG badge (often injected after hydration) with a clickable JOSE NAVARRO badge.
+    const svg = document.querySelector('#ALS_logo_svg');
+    if (!svg) return;
+
+    // Avoid duplicating
+    if (document.getElementById('mrz-jose-navarro-badge')) return;
+
+    const parent = svg.parentElement;
+    if (!parent) return;
+
+    // Hide the original SVG
+    svg.style.display = 'none';
+
+    const a = document.createElement('a');
+    a.id = 'mrz-jose-navarro-badge';
+    a.href = creditUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = creditName;
+
+    // Try to mimic the badge style (white box, black text, condensed/uppercase)
+    a.style.display = 'inline-flex';
+    a.style.alignItems = 'center';
+    a.style.justifyContent = 'center';
+    a.style.background = '#fff';
+    a.style.color = '#000';
+    a.style.textTransform = 'uppercase';
+    a.style.letterSpacing = '0.06em';
+    a.style.fontSize = '12px';
+    a.style.lineHeight = '1';
+    a.style.padding = '6px 10px';
+    a.style.border = '0';
+
+    // If the old badge had a link wrapper, repoint it.
+    const existingAnchor = parent.closest('a');
+    if (existingAnchor) {
+      existingAnchor.href = creditUrl;
+      existingAnchor.target = '_blank';
+      existingAnchor.rel = 'noopener noreferrer';
+      // Place our badge inside the same anchor for consistent layout
+      existingAnchor.appendChild(a);
+    } else {
+      parent.appendChild(a);
+    }
+  };
+
   const run = () => {
     replaceText(document.body);
     replaceParagraph();
+    injectJoseNavarroBadge();
     if (document.title) {
-      document.title = document.title.replace(fromDomain, to).replace(fromName, to).replace(fromHero, to);
+      document.title = document.title
+        .replace(fromDomain, to)
+        .replace(fromName, to)
+        .replace(fromHero, to)
+        .replace(fromArtBadge, creditName);
     }
   };
 
