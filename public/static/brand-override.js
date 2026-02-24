@@ -56,7 +56,8 @@
           .replace(fromHero, to)
           .replace(fromArtBadge, creditName)
           .replace(fromDesignedBy, 'Designed by ' + creditName)
-          .replace(fromDisenadoPor, 'DISEÑADO POR ' + creditName);
+          .replace(fromDisenadoPor, 'DISEÑADO POR ' + creditName)
+          .replace(/\bESTUDIO\s+JOSE\s+NAVARRO\b/gi, creditName);
       }
       return;
     }
@@ -84,6 +85,7 @@
             .replace(fromArtBadge, creditName)
             .replace(fromDesignedBy, 'Designed by ' + creditName)
             .replace(fromDisenadoPor, 'DISEÑADO POR ' + creditName)
+            .replace(/\bESTUDIO\s+JOSE\s+NAVARRO\b/gi, creditName)
         );
       }
     });
