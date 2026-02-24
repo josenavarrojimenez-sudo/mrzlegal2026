@@ -106,6 +106,28 @@
     el.childNodes.forEach(replaceText);
   };
 
+  const fixAlsFooterCredit = () => {
+    // Deterministic fix for the footer credit link text.
+    // User-provided selector:
+    // #__layout > div > div.wrapper.dark.fullheight > div > div.bodySlides > div.frame.frame-footer > div.footer--als > span:nth-child(1) > a
+    const creditLink = document.querySelector(
+      '#__layout > div > div.wrapper.dark.fullheight > div > div.bodySlides > div.frame.frame-footer > div.footer--als > span:nth-child(1) > a'
+    );
+    if (!creditLink) return;
+
+    const txt = (creditLink.textContent || '').replace(/\s+/g, ' ').trim();
+    if (/ESTUDIO\s+JOSE\s+NAVARRO/i.test(txt)) {
+      creditLink.textContent = creditName;
+    }
+
+    // Always enforce LinkedIn destination and accessibility.
+    creditLink.setAttribute('href', creditUrl);
+    creditLink.setAttribute('target', '_blank');
+    creditLink.setAttribute('rel', 'noopener noreferrer');
+    creditLink.setAttribute('aria-label', creditName);
+    creditLink.setAttribute('title', creditName);
+  };
+
   const injectJoseNavarroBadge = () => {
     // Replace Art Lebedev SVG badge (often injected after hydration) with a clickable JOSE NAVARRO badge.
     const svg = document.querySelector('#ALS_logo_svg');
@@ -157,6 +179,7 @@
     replaceText(document.body);
     replaceParagraph();
     injectJoseNavarroBadge();
+    fixAlsFooterCredit();
     if (document.title) {
       document.title = document.title
         .replace(fromDomain, to)
