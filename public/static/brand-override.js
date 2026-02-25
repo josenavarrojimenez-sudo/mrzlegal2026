@@ -115,8 +115,21 @@
     );
     if (!creditLink) return;
 
-    const txt = (creditLink.textContent || '').replace(/\s+/g, ' ').trim();
-    if (/ESTUDIO\s+JOSE\s+NAVARRO/i.test(txt)) {
+    const normalizeSpaces = (s) => (s || '').replace(/\s+/g, ' ').trim();
+    const txtRaw = creditLink.textContent || '';
+    const txt = normalizeSpaces(txtRaw);
+
+    // Remove any leading "Estudio José Navarro" (accent-insensitive) and any duplicates.
+    // Examples seen: "Estudio José NavarroJosé Navarro"
+    const cleaned = normalizeSpaces(
+      txt
+        .replace(/\bEstudio\s+Jos[eé]\s+Navarro\b/gi, '')
+        .replace(/\bESTUDIO\s+JOSE\s+NAVARRO\b/gi, '')
+    );
+
+    if (!cleaned || /Jos[eé]\s+Navarro/i.test(cleaned)) {
+      creditLink.textContent = creditName;
+    } else {
       creditLink.textContent = creditName;
     }
 
@@ -126,6 +139,18 @@
     creditLink.setAttribute('rel', 'noopener noreferrer');
     creditLink.setAttribute('aria-label', creditName);
     creditLink.setAttribute('title', creditName);
+
+    // Extra safety: if there is any sibling node with the "Estudio José Navarro" text, remove it.
+    const parent = creditLink.parentElement;
+    if (parent) {
+      Array.from(parent.childNodes).forEach((n) => {
+        if (n === creditLink) return;
+        const t = (n.textContent || '').replace(/\s+/g, ' ').trim();
+        if (/\bEstudio\s+Jos[eé]\s+Navarro\b/i.test(t) || /\bESTUDIO\s+JOSE\s+NAVARRO\b/i.test(t)) {
+          n.textContent = '';
+        }
+      });
+    }
   };
 
   const injectJoseNavarroBadge = () => {
