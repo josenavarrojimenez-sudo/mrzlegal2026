@@ -24,7 +24,16 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/api/*', cors())
 
-app.get('/', (c) => c.redirect('/es/', 302))
+app.get('/', (c) => {
+  const cookie = c.req.header('cookie') || ''
+  const cookieLang = /(?:^|;\s*)mrz_lang=(es|en)(?:;|$)/i.exec(cookie)?.[1]?.toLowerCase()
+  if (cookieLang === 'es') return c.redirect('/es/', 302)
+  if (cookieLang === 'en') return c.redirect('/en/', 302)
+
+  const accept = (c.req.header('accept-language') || '').toLowerCase()
+  const prefersEs = accept.startsWith('es') || accept.includes(' es') || accept.includes('es-')
+  return c.redirect(prefersEs ? '/es/' : '/en/', 302)
+})
 app.get('/es', (c) => c.redirect('/es/', 302))
 
 app.get('/api/health', (c) => {

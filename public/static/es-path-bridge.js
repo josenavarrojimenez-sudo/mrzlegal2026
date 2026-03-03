@@ -40,6 +40,9 @@
           function (ev) {
             ev.preventDefault();
             ev.stopPropagation();
+            try {
+              document.cookie = 'mrz_lang=en; Path=/; Max-Age=31536000; SameSite=Lax';
+            } catch (e) {}
             window.location.assign(enPathValue);
           },
           { capture: true }
