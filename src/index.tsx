@@ -137,8 +137,7 @@ app.get('/es/*', async (c) => {
     return response
   }
 
-  const upstreamPath = pathname.replace(/^\/es\b/, '/en')
-  const response = await fetchHtml(upstreamPath)
+  const response = await fetchHtml(pathname)
 
   const responseHeaders = new Headers(response.headers)
   const contentType = responseHeaders.get('content-type') || ''
@@ -266,9 +265,7 @@ app.all('*', async (c) => {
   const isContactsPath = /\/contacts\/?$/.test(url.pathname)
   const isHtmlBypassCache = true
 
-  if (isSpanishPath) {
-    url.pathname = url.pathname.replace(/^\/es\b/, '/en')
-  }
+
 
   headers.set('host', 'webapp-e2q.pages.dev')
   headers.delete('content-length')
