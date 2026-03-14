@@ -2,62 +2,63 @@
   const MAX_BATCH_ITEMS = 50;
   const cache = window.__mrzTranslateCache || (window.__mrzTranslateCache = new Map());
   const pending = new Set();
+  const TRANSLATED_ATTR = 'data-mrz-t';
 
   // Strings that must NEVER be translated
-  const NO_TRANSLATE = ['MRZ LEGAL', 'MRZ Legal', 'mrz legal'];
+  const NO_TRANSLATE_EXACT = new Set(['MRZ LEGAL','MRZ Legal','MRZ legal','mrz legal']);
 
-  // Manual overrides for bad Google Translate results
+  // Manual overrides — checked BEFORE Google Translate, case-sensitive key
   const OVERRIDES = {
-    'bankruptcy': 'quiebra',
     'Bankruptcy': 'Quiebra',
+    'bankruptcy': 'quiebra',
     'BANKRUPTCY': 'QUIEBRA',
-    'bankruptcy law': 'derecho concursal',
+    'Bankruptcies': 'Quiebras',
+    'bankruptcies': 'quiebras',
     'Bankruptcy law': 'Derecho concursal',
-    'subsidiary liability': 'responsabilidad subsidiaria',
+    'bankruptcy law': 'derecho concursal',
     'Subsidiary liability': 'Responsabilidad subsidiaria',
-    'dispute resolution': 'resolución de disputas',
+    'subsidiary liability': 'responsabilidad subsidiaria',
     'Dispute resolution': 'Resolución de disputas',
-    'tax disputes': 'disputas fiscales',
+    'dispute resolution': 'resolución de disputas',
     'Tax disputes': 'Disputas fiscales',
-    'corporate disputes': 'disputas corporativas',
+    'tax disputes': 'disputas fiscales',
     'Corporate disputes': 'Disputas corporativas',
+    'corporate disputes': 'disputas corporativas',
   };
 
   const shouldSkipNode = (node) => {
     if (!node || !node.parentElement) return true;
-    const tag = node.parentElement.tagName;
+    const el = node.parentElement;
+    // Skip if already translated
+    if (el.hasAttribute(TRANSLATED_ATTR)) return true;
+    const tag = el.tagName;
     return ['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','PATH'].includes(tag);
   };
 
   const shouldSkipValue = (text) => {
     const t = text.trim();
-    // Skip brand name
-    if (NO_TRANSLATE.some(n => t === n || t.toLowerCase() === n.toLowerCase())) return true;
-    // Skip short codes, numbers, URLs
     if (t.length < 2) return true;
-    if (/^[\d\s\+\-\.\,\(\)]+$/.test(t)) return true;
+    if (NO_TRANSLATE_EXACT.has(t)) return true;
+    if (/^[\d\s\+\-\.\,\(\)\/]+$/.test(t)) return true;
+    // If it contains MRZ Legal anywhere, skip
+    if (/MRZ\s*Legal/i.test(t)) return true;
     return false;
   };
 
-  // Google unofficial translate endpoint — no widget, no API key, invisible
   const googleTranslate = async (text) => {
-    // Check manual overrides first
     if (OVERRIDES[text]) return OVERRIDES[text];
     if (shouldSkipValue(text)) return text;
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=' + encodeURIComponent(text);
-    const resp = await fetch(url);
-    if (!resp.ok) return text;
-    const data = await resp.json();
-    let result = text;
-    if (data && data[0]) result = data[0].map(s => s[0] || '').join('');
-    // Post-process: restore brand name if translation mangled it
-    result = result.replace(/MRZ\s*(Legal|LEGAL|legal)/gi, 'MRZ Legal');
-    // Fix common bad translations
-    result = result.replace(/\bquiet[ao]?\b/gi, (m, offset) => {
-      // Only replace if it looks like a mistranslation of "bankruptcy"
-      return m;
-    });
-    return result || text;
+    try {
+      const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=' + encodeURIComponent(text);
+      const resp = await fetch(url);
+      if (!resp.ok) return text;
+      const data = await resp.json();
+      let result = text;
+      if (data && data[0]) result = data[0].map(s => s[0] || '').join('');
+      // Always restore brand name if mangled
+      result = result.replace(/MRZ\s*(Legal|LEGAL|legal)/gi, 'MRZ Legal');
+      return result || text;
+    } catch(e) { return text; }
   };
 
   const collectItems = () => {
@@ -74,14 +75,14 @@
       const raw = node.nodeValue || '';
       if (!raw.trim() || raw.trim().length < 2) continue;
       if (shouldSkipValue(raw)) continue;
-      items.push({ type: 'text', node, value: raw.trim(), raw });
+      items.push({ type: 'text', node, el: node.parentElement, value: raw.trim() });
     }
     document.querySelectorAll('[title],[aria-label],[placeholder]').forEach((el) => {
+      if (el.hasAttribute(TRANSLATED_ATTR)) return;
       ['title','aria-label','placeholder'].forEach((attr) => {
         const value = el.getAttribute(attr);
-        if (value && value.trim().length > 1 && !shouldSkipValue(value)) {
-          items.push({ type: 'attr', node: el, attr, value: value.trim() });
-        }
+        if (value && value.trim().length > 1 && !shouldSkipValue(value))
+          items.push({ type: 'attr', node: el, el, attr, value: value.trim() });
       });
     });
     return items;
@@ -89,6 +90,8 @@
 
   const applyTranslation = (item, translated) => {
     if (!translated) return;
+    // Mark as translated BEFORE changing value to prevent re-trigger
+    if (item.el) item.el.setAttribute(TRANSLATED_ATTR, '1');
     if (item.type === 'text') item.node.nodeValue = translated;
     else if (item.type === 'attr') item.node.setAttribute(item.attr, translated);
   };
@@ -137,6 +140,10 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
   else schedule();
 
-  const observer = new MutationObserver(schedule);
-  observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+  // Only watch for NEW elements added to DOM, NOT characterData (avoids re-translating already translated text)
+  const observer = new MutationObserver((mutations) => {
+    const hasNew = mutations.some(m => m.type === 'childList' && m.addedNodes.length > 0);
+    if (hasNew) schedule();
+  });
+  observer.observe(document.documentElement, { subtree: true, childList: true });
 })();
