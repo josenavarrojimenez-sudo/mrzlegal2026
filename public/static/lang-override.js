@@ -70,3 +70,41 @@
     start()
   }
 })()
+
+// Desktop: keep language button text in sync with current route
+(function syncDesktopLangButton(){
+  function getLang(){ return location.pathname.startsWith('/es') ? 'es' : 'en'; }
+
+  function updateBtn(){
+    var lang = getLang();
+    var other = lang === 'es' ? 'en' : 'es';
+    var otherUp = other.toUpperCase();
+    // Find the desktop nav language buttons (NOT inside mobile nav)
+    var btns = Array.from(document.querySelectorAll('a, button')).filter(function(el){
+      var txt = (el.textContent || '').trim().toUpperCase();
+      return (txt === 'EN' || txt === 'ES') && !el.closest('.nav-mobile');
+    });
+    btns.forEach(function(el){
+      // Update href to point to the other language
+      var targetPath = other === 'es' ? '/es/' : '/en/';
+      if (el.tagName === 'A') el.setAttribute('href', targetPath);
+      // The button should show the OTHER language (where you CAN go)
+      if (el.textContent.trim().toUpperCase() !== otherUp) {
+        el.textContent = otherUp;
+      }
+    });
+  }
+
+  // Run on load and on every route change (Vue Router uses history.pushState)
+  updateBtn();
+  var _pushState = history.pushState.bind(history);
+  history.pushState = function(){
+    _pushState.apply(history, arguments);
+    setTimeout(updateBtn, 100);
+  };
+  window.addEventListener('popstate', function(){ setTimeout(updateBtn, 100); });
+
+  // Also watch DOM mutations for Nuxt re-renders
+  var obs = new MutationObserver(function(){ updateBtn(); });
+  obs.observe(document.documentElement, { subtree: true, childList: true });
+})();
