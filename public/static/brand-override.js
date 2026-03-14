@@ -336,34 +336,33 @@
 
 // Move language switcher into nav menu list, after the last item (Contacts)
 (function moveLangSwitcherToMenu(){
+  var moved = false;
+
   function doMove(){
-    // Find all nav menu list items in mobile nav
+    if (moved) return;
     var navList = document.querySelector('.nav-mobile__list, .nav-mobile .nav-list, .nav-mobile ul');
     if (!navList) return;
 
-    // Find the language switch link (ES or EN — a short 2-letter link)
-    var langLinks = Array.from(document.querySelectorAll('a')).filter(function(a){
+    // Find exactly ONE language switch link (not already moved)
+    var langLink = Array.from(document.querySelectorAll('a:not(.mrz-lang-moved)')).find(function(a){
       var txt = (a.textContent || '').trim().toUpperCase();
       return (txt === 'ES' || txt === 'EN') && a.closest('.nav-mobile, header, .header');
     });
-    if (!langLinks.length) return;
+    if (!langLink) return;
 
-    langLinks.forEach(function(link){
-      // Clone it as a list item matching nav style
-      var existingItem = navList.querySelector('li');
-      var li = existingItem ? existingItem.cloneNode(false) : document.createElement('li');
-      li.className = (existingItem ? existingItem.className : 'nav-list__item') + ' mrz-lang-item';
-      li.style.cssText = 'cursor:pointer;';
-      var newLink = link.cloneNode(true);
-      li.appendChild(newLink);
-      // Remove original from wherever it is
-      var parent = link.closest('li');
-      if (parent) parent.remove(); else link.remove();
-      navList.appendChild(li);
-    });
+    // Mark and move (don't clone — prevents duplicates)
+    langLink.classList.add('mrz-lang-moved');
+    var existingItem = navList.querySelector('li');
+    var li = document.createElement('li');
+    li.className = (existingItem ? existingItem.className : 'nav-list__item') + ' mrz-lang-item';
+    li.appendChild(langLink);
+    // Hide the original parent container if empty
+    var oldParent = langLink.closest('.nav-mobile__bottom, .nav-mobile__lang, [class*="lang"]');
+    if (oldParent && oldParent !== navList) oldParent.style.display = 'none';
+    navList.appendChild(li);
+    moved = true;
   }
 
-  // Run after DOM ready + after Nuxt hydration
   var attempts = 0;
   var iv = setInterval(function(){
     doMove();
@@ -371,6 +370,5 @@
     if(attempts > 20) clearInterval(iv);
   }, 300);
 
-  // Also re-run when menu opens
   document.addEventListener('click', function(){ setTimeout(doMove, 100); }, true);
 })();
