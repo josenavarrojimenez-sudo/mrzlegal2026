@@ -96,13 +96,19 @@
 // Force full page reload on language switch (soft nav doesn't reload translations)
 (function forceHardLangSwitch(){
   document.addEventListener('click', function(e){
-    var el = e.target.closest('a');
-    if (!el) return;
-    var txt = (el.textContent || '').trim().toUpperCase();
-    if (txt !== 'EN' && txt !== 'ES') return;
-    // Determine destination based on current page
-    var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
-    e.preventDefault();
-    window.location.assign(dest);
+    // Check clicked element and its parents (up to 3 levels)
+    var el = e.target;
+    for (var i = 0; i < 3; i++) {
+      if (!el) break;
+      var txt = (el.textContent || '').trim().toUpperCase();
+      // Match EN, ES, N, S (full or truncated language codes)
+      if (/^(EN|ES|E|N|S)$/.test(txt)) {
+        var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
+        e.preventDefault();
+        window.location.assign(dest);
+        return;
+      }
+      el = el.parentElement;
+    }
   });
 })();
