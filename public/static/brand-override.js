@@ -265,3 +265,27 @@
   style.textContent = '@media (max-width:900px){#mrz-swipe-hint{display:block !important;visibility:visible !important;position:fixed !important;left:16px !important;bottom:20px !important;transform:none !important;right:auto !important;}}';
   if (!document.getElementById('mrz-swipe-pos')) document.head.appendChild(style);
 })();
+
+// Hide swipe hint when mobile menu is open, show when closed
+(function swipeHintMenuToggle(){
+  var style = document.getElementById('mrz-swipe-menu') || document.createElement('style');
+  style.id = 'mrz-swipe-menu';
+  // Hide when nav-mobile has --opened modifier or body has menu-open class
+  style.textContent = [
+    '.nav-mobile--opened ~ * #mrz-swipe-hint,',
+    '.nav-mobile--opened #mrz-swipe-hint,',
+    'body.menu-open #mrz-swipe-hint,',
+    'body.nav-open #mrz-swipe-hint,',
+    '[class*="nav-mobile--open"] #mrz-swipe-hint { display: none !important; }'
+  ].join('\n');
+  if (!document.getElementById('mrz-swipe-menu')) document.head.appendChild(style);
+
+  // Also watch DOM for the menu opening (class changes on nav element)
+  var observer = new MutationObserver(function(){
+    var hint = document.getElementById('mrz-swipe-hint');
+    if (!hint) return;
+    var menuOpen = document.querySelector('.nav-mobile--opened, .nav--opened, [class*="nav-mobile--open"]');
+    hint.style.display = menuOpen ? 'none' : '';
+  });
+  observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
+})();
