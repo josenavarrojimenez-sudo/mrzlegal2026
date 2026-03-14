@@ -1,3 +1,4 @@
+if (window.__mrzLoaded) { /* already loaded */ } else { window.__mrzLoaded = true;
 (function () {
   const to = 'MRZ LEGAL';
   const fromDomain = /krivitskiy\.com/gi;
@@ -371,3 +372,5 @@
   var iv = setInterval(function(){ run(); if(++attempts > 20 || done) clearInterval(iv); }, 300);
   document.addEventListener('click', function(){ setTimeout(run, 150); }, true);
 })();
+
+} // end __mrzLoaded guard
