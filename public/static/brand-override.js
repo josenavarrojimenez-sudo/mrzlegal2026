@@ -289,3 +289,44 @@
   });
   observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
+
+// Detect menu open/close via click on hamburger and class observation
+(function swipeHintMenuV2(){
+  var hidden = false;
+
+  function getHint(){ return document.getElementById('mrz-swipe-hint'); }
+
+  function hideHint(){
+    hidden = true;
+    var h = getHint(); if(h) h.style.setProperty('display','none','important');
+  }
+  function showHint(){
+    hidden = false;
+    var h = getHint(); if(h) h.style.removeProperty('display');
+  }
+  function checkMenuState(){
+    // Any element with class containing "opened" or "open" that's nav-related
+    var open = document.querySelector(
+      '.nav-mobile.nav-mobile--opened,' +
+      '.header--menu-open,' +
+      '[class*="nav"][class*="open"],' +
+      '[class*="menu"][class*="open"],' +
+      '[class*="burger"][class*="active"],' +
+      '[class*="hamburger"][class*="active"]'
+    );
+    if (open && !hidden) hideHint();
+    else if (!open && hidden) showHint();
+  }
+
+  // Watch ALL class changes on the whole page
+  var obs = new MutationObserver(checkMenuState);
+
+  function init(){
+    obs.observe(document.documentElement, {subtree:true, attributes:true, attributeFilter:['class','style']});
+    // Also listen for clicks anywhere — if hint is visible and menu opens, it'll be caught by observer
+    document.addEventListener('click', function(){ setTimeout(checkMenuState, 50); }, true);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
