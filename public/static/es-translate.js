@@ -3,20 +3,61 @@
   const cache = window.__mrzTranslateCache || (window.__mrzTranslateCache = new Map());
   const pending = new Set();
 
+  // Strings that must NEVER be translated
+  const NO_TRANSLATE = ['MRZ LEGAL', 'MRZ Legal', 'mrz legal'];
+
+  // Manual overrides for bad Google Translate results
+  const OVERRIDES = {
+    'bankruptcy': 'quiebra',
+    'Bankruptcy': 'Quiebra',
+    'BANKRUPTCY': 'QUIEBRA',
+    'bankruptcy law': 'derecho concursal',
+    'Bankruptcy law': 'Derecho concursal',
+    'subsidiary liability': 'responsabilidad subsidiaria',
+    'Subsidiary liability': 'Responsabilidad subsidiaria',
+    'dispute resolution': 'resolución de disputas',
+    'Dispute resolution': 'Resolución de disputas',
+    'tax disputes': 'disputas fiscales',
+    'Tax disputes': 'Disputas fiscales',
+    'corporate disputes': 'disputas corporativas',
+    'Corporate disputes': 'Disputas corporativas',
+  };
+
   const shouldSkipNode = (node) => {
     if (!node || !node.parentElement) return true;
     const tag = node.parentElement.tagName;
     return ['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','PATH'].includes(tag);
   };
 
+  const shouldSkipValue = (text) => {
+    const t = text.trim();
+    // Skip brand name
+    if (NO_TRANSLATE.some(n => t === n || t.toLowerCase() === n.toLowerCase())) return true;
+    // Skip short codes, numbers, URLs
+    if (t.length < 2) return true;
+    if (/^[\d\s\+\-\.\,\(\)]+$/.test(t)) return true;
+    return false;
+  };
+
   // Google unofficial translate endpoint — no widget, no API key, invisible
   const googleTranslate = async (text) => {
+    // Check manual overrides first
+    if (OVERRIDES[text]) return OVERRIDES[text];
+    if (shouldSkipValue(text)) return text;
     const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=' + encodeURIComponent(text);
     const resp = await fetch(url);
     if (!resp.ok) return text;
     const data = await resp.json();
-    if (data && data[0]) return data[0].map(s => s[0] || '').join('');
-    return text;
+    let result = text;
+    if (data && data[0]) result = data[0].map(s => s[0] || '').join('');
+    // Post-process: restore brand name if translation mangled it
+    result = result.replace(/MRZ\s*(Legal|LEGAL|legal)/gi, 'MRZ Legal');
+    // Fix common bad translations
+    result = result.replace(/\bquiet[ao]?\b/gi, (m, offset) => {
+      // Only replace if it looks like a mistranslation of "bankruptcy"
+      return m;
+    });
+    return result || text;
   };
 
   const collectItems = () => {
@@ -32,12 +73,15 @@
       const node = walker.currentNode;
       const raw = node.nodeValue || '';
       if (!raw.trim() || raw.trim().length < 2) continue;
+      if (shouldSkipValue(raw)) continue;
       items.push({ type: 'text', node, value: raw.trim(), raw });
     }
     document.querySelectorAll('[title],[aria-label],[placeholder]').forEach((el) => {
       ['title','aria-label','placeholder'].forEach((attr) => {
         const value = el.getAttribute(attr);
-        if (value && value.trim().length > 1) items.push({ type: 'attr', node: el, attr, value: value.trim() });
+        if (value && value.trim().length > 1 && !shouldSkipValue(value)) {
+          items.push({ type: 'attr', node: el, attr, value: value.trim() });
+        }
       });
     });
     return items;
@@ -61,7 +105,6 @@
     });
     if (!toTranslate.length) return;
 
-    // Translate in parallel batches of MAX_BATCH_ITEMS
     for (let i = 0; i < toTranslate.length; i += MAX_BATCH_ITEMS) {
       const batch = toTranslate.slice(i, i + MAX_BATCH_ITEMS);
       await Promise.all(batch.map(async (original) => {
