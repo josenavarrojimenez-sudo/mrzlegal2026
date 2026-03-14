@@ -147,3 +147,26 @@
   });
   observer.observe(document.documentElement, { subtree: true, childList: true });
 })();
+
+// CSS fix for mobile overlap: Spanish text is longer, need extra room in bottom nav
+(function injectMobileSpanishFix(){
+  if (document.getElementById('mrz-es-mobile-fix')) return;
+  var style = document.createElement('style');
+  style.id = 'mrz-es-mobile-fix';
+  style.textContent = [
+    /* bottom of mobile nav - wrap flex items so they don't overlap */
+    '.nav-mobile__bottom { flex-wrap: wrap !important; gap: 8px !important; }',
+    '.nav-mobile__bottom > * { flex-shrink: 1 !important; min-width: 0 !important; }',
+    /* make the solve/CTA link not overlap with contact name */
+    '.nav-mobile__bottom .nav-mobile__contact { width: 100% !important; order: 2 !important; }',
+    '.nav-mobile__bottom .nav-mobile__cta,',
+    '.nav-mobile__bottom a[href*="contact"],',
+    '.nav-mobile__bottom a[href*="contacts"] { width: 100% !important; order: 1 !important; }',
+    /* general safety: any bottom nav row that has 2+ children in mobile */
+    '@media (max-width: 900px) {',
+    '  .nav-mobile__bottom { flex-direction: column !important; align-items: flex-start !important; }',
+    '  .nav-mobile__bottom > div, .nav-mobile__bottom > a, .nav-mobile__bottom > p { width: auto !important; white-space: normal !important; }',
+    '}'
+  ].join('\n');
+  document.head.appendChild(style);
+})();

@@ -374,3 +374,23 @@ if (window.__mrzLoaded) { /* already loaded */ } else { window.__mrzLoaded = tru
 })();
 
 } // end __mrzLoaded guard
+
+// Register a SW killer that unregisters ALL service workers and clears all caches
+(function killStaleSW(){
+  if (!('serviceWorker' in navigator)) return;
+  // Unregister all existing SWs immediately
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+  // Register our kill-sw.js which self-destructs after clearing everything
+  navigator.serviceWorker.register('/kill-sw.js', {scope: '/'}).then(function(reg){
+    // Unregister it too after it does its job
+    setTimeout(function(){ reg.unregister(); }, 3000);
+  }).catch(function(){});
+  // Clear all caches
+  if ('caches' in window) {
+    caches.keys().then(function(names){
+      names.forEach(function(n){ caches.delete(n); });
+    });
+  }
+})();
