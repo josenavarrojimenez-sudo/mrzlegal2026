@@ -334,43 +334,40 @@
   else init();
 })();
 
-// Move language switcher into nav menu list, after the last item (Contacts)
-(function moveLangSwitcherToMenu(){
-  function doMove(){
-    // Find all nav menu list items in mobile nav
-    var navList = document.querySelector('.nav-mobile__list, .nav-mobile .nav-list, .nav-mobile ul');
+// Lang switcher in mobile nav: hide bottom duplicate, keep only one in nav list
+(function fixMobileLangSwitcher(){
+  var done = false;
+  function run(){
+    if (done) return;
+    var navList = document.querySelector('.nav-mobile__list, .nav-mobile .nav-list');
     if (!navList) return;
 
-    // Find the language switch link (ES or EN — a short 2-letter link)
-    var langLinks = Array.from(document.querySelectorAll('a')).filter(function(a){
-      var txt = (a.textContent || '').trim().toUpperCase();
-      return (txt === 'ES' || txt === 'EN') && a.closest('.nav-mobile, header, .header');
+    // Find ALL lang links (EN/ES) inside the mobile nav
+    var allLangLinks = Array.from(document.querySelectorAll('.nav-mobile a, .nav-mobile button')).filter(function(el){
+      return /^(EN|ES)$/i.test((el.textContent || '').trim());
     });
-    if (!langLinks.length) return;
+    if (!allLangLinks.length) return;
 
-    langLinks.forEach(function(link){
-      // Clone it as a list item matching nav style
-      var existingItem = navList.querySelector('li');
-      var li = existingItem ? existingItem.cloneNode(false) : document.createElement('li');
-      li.className = (existingItem ? existingItem.className : 'nav-list__item') + ' mrz-lang-item';
-      li.style.cssText = 'cursor:pointer;';
-      var newLink = link.cloneNode(true);
-      li.appendChild(newLink);
-      // Remove original from wherever it is
-      var parent = link.closest('li');
-      if (parent) parent.remove(); else link.remove();
-      navList.appendChild(li);
+    // Hide all of them from their current location
+    allLangLinks.forEach(function(el){
+      var li = el.closest('li');
+      if (li) li.style.display = 'none'; else el.style.display = 'none';
     });
+
+    // Add ONE clean item to the nav list after Contacts
+    if (navList.querySelector('.mrz-lang-nav')) return; // already added
+    var ref = allLangLinks[0];
+    var newLink = ref.cloneNode(true);
+    newLink.style.display = '';
+    newLink.style.color = '';
+    var li = document.createElement('li');
+    li.className = (navList.querySelector('li') ? navList.querySelector('li').className : 'nav-list__item') + ' mrz-lang-nav';
+    li.appendChild(newLink);
+    navList.appendChild(li);
+    done = true;
   }
 
-  // Run after DOM ready + after Nuxt hydration
   var attempts = 0;
-  var iv = setInterval(function(){
-    doMove();
-    attempts++;
-    if(attempts > 20) clearInterval(iv);
-  }, 300);
-
-  // Also re-run when menu opens
-  document.addEventListener('click', function(){ setTimeout(doMove, 100); }, true);
+  var iv = setInterval(function(){ run(); if(++attempts > 20 || done) clearInterval(iv); }, 300);
+  document.addEventListener('click', function(){ setTimeout(run, 150); }, true);
 })();
