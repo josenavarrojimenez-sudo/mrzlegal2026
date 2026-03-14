@@ -301,8 +301,11 @@
     var h = getHint(); if(h) h.style.setProperty('display','none','important');
   }
   function showHint(){
-    hidden = false;
-    var h = getHint(); if(h) h.style.removeProperty('display');
+    // Delay showing hint so it doesn't flash during menu close/navigation
+    setTimeout(function(){
+      hidden = false;
+      var h = getHint(); if(h) h.style.removeProperty('display');
+    }, 800);
   }
   function checkMenuState(){
     // Any element with class containing "opened" or "open" that's nav-related
