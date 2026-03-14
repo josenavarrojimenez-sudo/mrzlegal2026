@@ -394,3 +394,23 @@ if (window.__mrzLoaded) { /* already loaded */ } else { window.__mrzLoaded = tru
     });
   }
 })();
+
+// LANGUAGE SWITCH FIX: capture clicks on EN/ES buttons, force hard navigation
+(function langSwitchFix(){
+  document.addEventListener('click', function(e){
+    var el = e.target;
+    for (var i = 0; i < 5; i++) {
+      if (!el || el === document.body) break;
+      var txt = (el.textContent || '').trim().toUpperCase();
+      var href = el.getAttribute ? (el.getAttribute('href') || '') : '';
+      if (/^(EN|ES)$/.test(txt) || href.match(/^\/(en|es)\/?$/)) {
+        e.preventDefault();
+        e.stopPropagation();
+        var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
+        window.location.assign(dest);
+        return;
+      }
+      el = el.parentElement;
+    }
+  }, true); // capture phase - fires before Vue Router
+})();
