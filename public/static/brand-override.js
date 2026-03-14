@@ -256,37 +256,12 @@
   }
 })();
 
-// Hide upstream swipe hint that overlaps with SOLVE PROBLEM button
-(function hideSwiperHint(){
-  var style = document.getElementById('mrz-hide-swipe') || document.createElement('style');
-  style.id = 'mrz-hide-swipe';
-  style.textContent = '#mrz-swipe-hint { display: none !important; visibility: hidden !important; }';
-  document.head.appendChild(style);
-  // Also remove element if already in DOM
-  var el = document.getElementById('mrz-swipe-hint');
-  if (el) el.remove();
-  // Watch for it being added dynamically
-  var obs = new MutationObserver(function(){
-    var hint = document.getElementById('mrz-swipe-hint');
-    if (hint) { hint.remove(); obs.disconnect(); }
-  });
-  obs.observe(document.documentElement, {subtree: true, childList: true});
-})();
 
-// Reposition swipe hint to bottom-left so it doesn't overlap the center button
-(function repositionSwipeHint(){
-  var style = document.getElementById('mrz-swipe-reposition') || document.createElement('style');
-  style.id = 'mrz-swipe-reposition';
-  style.textContent = [
-    '#mrz-swipe-hint {',
-    '  display: block !important;',
-    '  visibility: visible !important;',
-    '  position: fixed !important;',
-    '  left: 16px !important;',
-    '  bottom: 16px !important;',
-    '  transform: none !important;',
-    '  right: auto !important;',
-    '}'
-  ].join('\n');
-  document.head.appendChild(style);
+// Swipe hint: reposition to bottom-left, next to (not on top of) the Solve Problem button
+(function fixSwipeHint(){
+  // Inject CSS to reposition — never hide
+  var style = document.getElementById('mrz-swipe-pos') || document.createElement('style');
+  style.id = 'mrz-swipe-pos';
+  style.textContent = '@media (max-width:900px){#mrz-swipe-hint{display:block !important;visibility:visible !important;position:fixed !important;left:16px !important;bottom:20px !important;transform:none !important;right:auto !important;}}';
+  if (!document.getElementById('mrz-swipe-pos')) document.head.appendChild(style);
 })();
