@@ -272,3 +272,21 @@
   });
   obs.observe(document.documentElement, {subtree: true, childList: true});
 })();
+
+// Reposition swipe hint to bottom-left so it doesn't overlap the center button
+(function repositionSwipeHint(){
+  var style = document.getElementById('mrz-swipe-reposition') || document.createElement('style');
+  style.id = 'mrz-swipe-reposition';
+  style.textContent = [
+    '#mrz-swipe-hint {',
+    '  display: block !important;',
+    '  visibility: visible !important;',
+    '  position: fixed !important;',
+    '  left: 16px !important;',
+    '  bottom: 16px !important;',
+    '  transform: none !important;',
+    '  right: auto !important;',
+    '}'
+  ].join('\n');
+  document.head.appendChild(style);
+})();
