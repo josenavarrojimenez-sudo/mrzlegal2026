@@ -105,13 +105,13 @@ app.get('/es/*', async (c) => {
   }
 
   const headers = new Headers(c.req.raw.headers)
-  headers.set('host', 'krivitskiy.com')
+  headers.set('host', 'webapp-e2q.pages.dev')
   headers.delete('content-length')
 
   const fetchHtml = async (targetPath: string) => {
     const upstreamUrl = new URL(c.req.url)
     upstreamUrl.protocol = 'https:'
-    upstreamUrl.hostname = 'krivitskiy.com'
+    upstreamUrl.hostname = 'webapp-e2q.pages.dev'
     upstreamUrl.pathname = targetPath
 
     const response = await fetch(upstreamUrl.toString(), {
@@ -125,7 +125,7 @@ app.get('/es/*', async (c) => {
     if (response.status === 404 || response.status === 410) {
       const fallbackUrl = new URL(c.req.url)
       fallbackUrl.protocol = 'https:'
-      fallbackUrl.hostname = 'krivitskiy.com'
+      fallbackUrl.hostname = 'webapp-e2q.pages.dev'
       fallbackUrl.pathname = '/en/'
       return fetch(fallbackUrl.toString(), {
         method: 'GET',
@@ -227,10 +227,10 @@ app.post('/api/newsletter', async (c) => {
 app.all('/i/*', async (c) => {
   const url = new URL(c.req.url)
   url.protocol = 'https:'
-  url.hostname = 'krivitskiy.com'
+  url.hostname = 'webapp-e2q.pages.dev'
 
   const headers = new Headers(c.req.raw.headers)
-  headers.set('host', 'krivitskiy.com')
+  headers.set('host', 'webapp-e2q.pages.dev')
   headers.delete('content-length')
 
   const response = await fetch(url.toString(), {
@@ -251,7 +251,7 @@ app.all('/i/*', async (c) => {
 app.all('*', async (c) => {
   const url = new URL(c.req.url)
   url.protocol = 'https:'
-  url.hostname = 'krivitskiy.com'
+  url.hostname = 'webapp-e2q.pages.dev'
 
   const method = c.req.method
   const headers = new Headers(c.req.raw.headers)
@@ -270,7 +270,7 @@ app.all('*', async (c) => {
     url.pathname = url.pathname.replace(/^\/es\b/, '/en')
   }
 
-  headers.set('host', 'krivitskiy.com')
+  headers.set('host', 'webapp-e2q.pages.dev')
   headers.delete('content-length')
 
   const init: RequestInit = {
@@ -293,7 +293,7 @@ app.all('*', async (c) => {
     if (isSpanishPath && (method === 'GET' || method === 'HEAD') && response.status === 404) {
       const fallbackUrl = new URL(c.req.url)
       fallbackUrl.protocol = 'https:'
-      fallbackUrl.hostname = 'krivitskiy.com'
+      fallbackUrl.hostname = 'webapp-e2q.pages.dev'
       fallbackUrl.pathname = '/en/'
       response = await fetch(fallbackUrl.toString(), init)
     }
@@ -700,10 +700,10 @@ function renderBasePage({
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>${title} — MRZ LEGAL</title>
-        <link rel="icon" type="image/x-icon" href="https://krivitskiy.com/favicon.ico" />
-        <link rel="preload" href="https://krivitskiy.com/font/als_span_regular.woff2" as="font" type="font/woff2" crossorigin />
-        <link rel="preload" href="https://krivitskiy.com/font/als_wagon_bold_condensed.woff2" as="font" type="font/woff2" crossorigin />
-        <link rel="preload" href="https://krivitskiy.com/font/als_wagon_regular_condensed.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="icon" type="image/x-icon" href="https://webapp-e2q.pages.dev/favicon.ico" />
+        <link rel="preload" href="https://webapp-e2q.pages.dev/font/als_span_regular.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="https://webapp-e2q.pages.dev/font/als_wagon_bold_condensed.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="https://webapp-e2q.pages.dev/font/als_wagon_regular_condensed.woff2" as="font" type="font/woff2" crossorigin />
         <link rel="stylesheet" href="/static/style.css" />
         <script src="/static/lang-override.js" defer></script>
       </head>
@@ -727,7 +727,7 @@ function renderBasePage({
           <div>© MRZ LEGAL. All rights reserved.</div>
           <div class="footer-links">
             <a href="/en/">English</a>
-            <a href="https://krivitskiy.com/" target="_blank" rel="noreferrer">Original site</a>
+            <a href="https://webapp-e2q.pages.dev/" target="_blank" rel="noreferrer">Original site</a>
           </div>
         </footer>
         <script>${script}</script>
