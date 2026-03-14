@@ -1586,8 +1586,7 @@ function applyServerReplacements(html: string, pathname: string) {
     `body.mrz-contacts #mrz-contact-overlay{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);text-align:center;font-size:16px;line-height:1.4;color:#000;text-transform:uppercase;letter-spacing:1px;z-index:5;}\n` +
     `body.mrz-contacts #mrz-contact-overlay .line{display:block;background:#111;color:#fff;padding:3px 10px;margin:4px 0;}\n` +
     `body.mrz-contacts .nav-mobile__top{display:none !important;}\n` +
-    `#mrz-swipe-hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;padding:6px 12px;border-radius:999px;font-size:12px;letter-spacing:1px;z-index:9999;}\n` +
-    `@media (min-width: 901px){#mrz-swipe-hint{display:none;}}\n` +
+
     `</style>\n`
 
   if (!updated.includes('id="mrz-overrides"')) {
@@ -1599,10 +1598,7 @@ function applyServerReplacements(html: string, pathname: string) {
     updated = updated.replace('</body>', `${overlay}</body>`)
   }
 
-  if (isHome && !updated.includes('id="mrz-swipe-hint"')) {
-    const hint = `\n<div id="mrz-swipe-hint">Swipe left →</div>\n`
-    updated = updated.replace('</body>', `${hint}</body>`)
-  }
+
 
   return updated
 }
