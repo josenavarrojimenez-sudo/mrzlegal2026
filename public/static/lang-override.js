@@ -93,22 +93,25 @@
   window.addEventListener('popstate', function(){ setTimeout(fixBtns, 300); });
 })();
 
-// Force full page reload on language switch (soft nav doesn't reload translations)
+// Force full page reload on language switch — capture phase beats Vue Router
 (function forceHardLangSwitch(){
   document.addEventListener('click', function(e){
-    // Check clicked element and its parents (up to 3 levels)
     var el = e.target;
-    for (var i = 0; i < 3; i++) {
-      if (!el) break;
+    for (var i = 0; i < 4; i++) {
+      if (!el || el === document.body) break;
       var txt = (el.textContent || '').trim().toUpperCase();
-      // Match EN, ES, N, S (full or truncated language codes)
-      if (/^(EN|ES|E|N|S)$/.test(txt)) {
-        var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
+      var href = el.tagName === 'A' ? (el.getAttribute('href') || '') : '';
+      var isLangEl = /^(EN|ES)$/.test(txt) ||
+                     (href.match(/^\/(en|es)\/?$/) !== null);
+      if (isLangEl) {
         e.preventDefault();
-        window.location.assign(dest);
+        e.stopPropagation();
+        var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
+        // Small delay ensures preventDefault is processed before assign
+        setTimeout(function(){ window.location.assign(dest); }, 0);
         return;
       }
       el = el.parentElement;
     }
-  });
+  }, true); // true = capture phase, fires BEFORE Vue Router
 })();
