@@ -95,17 +95,14 @@
 
 // Force full page reload on language switch (soft nav doesn't reload translations)
 (function forceHardLangSwitch(){
-  function handleClick(e){
+  document.addEventListener('click', function(e){
     var el = e.target.closest('a');
     if (!el) return;
     var txt = (el.textContent || '').trim().toUpperCase();
     if (txt !== 'EN' && txt !== 'ES') return;
-    var href = el.getAttribute('href') || '';
-    if (!href.startsWith('/es') && !href.startsWith('/en')) return;
-    // Force hard navigation instead of Vue soft nav
+    // Determine destination based on current page
+    var dest = location.pathname.startsWith('/es') ? '/en/' : '/es/';
     e.preventDefault();
-    e.stopImmediatePropagation();
-    window.location.href = href;
-  }
-  document.addEventListener('click', handleClick, true);
+    window.location.assign(dest);
+  });
 })();
