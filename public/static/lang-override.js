@@ -92,3 +92,20 @@
   history.pushState = function(){ _push.apply(history, arguments); setTimeout(fixBtns, 300); };
   window.addEventListener('popstate', function(){ setTimeout(fixBtns, 300); });
 })();
+
+// Force full page reload on language switch (soft nav doesn't reload translations)
+(function forceHardLangSwitch(){
+  function handleClick(e){
+    var el = e.target.closest('a');
+    if (!el) return;
+    var txt = (el.textContent || '').trim().toUpperCase();
+    if (txt !== 'EN' && txt !== 'ES') return;
+    var href = el.getAttribute('href') || '';
+    if (!href.startsWith('/es') && !href.startsWith('/en')) return;
+    // Force hard navigation instead of Vue soft nav
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.location.href = href;
+  }
+  document.addEventListener('click', handleClick, true);
+})();
