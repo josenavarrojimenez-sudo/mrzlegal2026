@@ -1583,7 +1583,9 @@ function applyServerReplacements(html: string, pathname: string) {
   const style = `\n<style id="mrz-overrides">\n` +
     `body.mrz-contacts #map{position:relative;min-height:100vh;width:100%;height:100%;background-image:url('${mapUrl}');background-repeat:repeat;background-size:512px 512px;background-position:center;filter:grayscale(100%) contrast(140%) brightness(110%);}\n` +
     `body.mrz-contacts #map iframe{display:none !important;}\n` +
+    `#mrz-swipe-hint{display:none !important;}\n` +
     `body.mrz-contacts #mrz-contact-overlay{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);text-align:center;font-size:16px;line-height:1.4;color:#000;text-transform:uppercase;letter-spacing:1px;z-index:5;}\n` +
+    `#mrz-swipe-hint{display:none !important;}\n` +
     `body.mrz-contacts #mrz-contact-overlay .line{display:block;background:#111;color:#fff;padding:3px 10px;margin:4px 0;}\n` +
     `body.mrz-contacts .nav-mobile__top{display:none !important;}\n` +
 
