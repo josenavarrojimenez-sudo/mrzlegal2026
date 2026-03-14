@@ -5,11 +5,14 @@
   const TRANSLATED_ATTR = 'data-mrz-t';
 
   // Strings that must NEVER be translated
-  const NO_TRANSLATE_EXACT = new Set(['MRZ LEGAL','MRZ Legal','MRZ legal','mrz legal']);
+  const NO_TRANSLATE_EXACT = new Set(['MRZ LEGAL','MRZ Legal','MRZ legal','mrz legal','Quiebras','quiebras','QUIEBRAS','Quiebra','quiebra','QUIEBRA']);
 
   // Manual overrides — checked BEFORE Google Translate, case-sensitive key
   const OVERRIDES = {
     'Bankruptcy': 'Quiebra',
+    'Bankruptcies': 'Quiebras',
+    'Quiebras': 'Quiebras',
+    'Quiebra': 'Quiebra',
     'bankruptcy': 'quiebra',
     'BANKRUPTCY': 'QUIEBRA',
     'Bankruptcies': 'Quiebras',
