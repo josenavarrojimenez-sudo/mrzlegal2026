@@ -241,3 +241,34 @@
     }
   }, 500);
 })();
+
+// Force kill any stale service workers
+(function(){
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ r.unregister(); });
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then(function(names){
+      names.forEach(function(name){ caches.delete(name); });
+    });
+  }
+})();
+
+// Hide upstream swipe hint that overlaps with SOLVE PROBLEM button
+(function hideSwiperHint(){
+  var style = document.getElementById('mrz-hide-swipe') || document.createElement('style');
+  style.id = 'mrz-hide-swipe';
+  style.textContent = '#mrz-swipe-hint { display: none !important; visibility: hidden !important; }';
+  document.head.appendChild(style);
+  // Also remove element if already in DOM
+  var el = document.getElementById('mrz-swipe-hint');
+  if (el) el.remove();
+  // Watch for it being added dynamically
+  var obs = new MutationObserver(function(){
+    var hint = document.getElementById('mrz-swipe-hint');
+    if (hint) { hint.remove(); obs.disconnect(); }
+  });
+  obs.observe(document.documentElement, {subtree: true, childList: true});
+})();
