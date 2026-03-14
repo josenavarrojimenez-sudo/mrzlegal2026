@@ -71,40 +71,24 @@
   }
 })()
 
-// Desktop: keep language button text in sync with current route
+// Desktop: fix language button href to ensure correct navigation
 (function syncDesktopLangButton(){
-  function getLang(){ return location.pathname.startsWith('/es') ? 'es' : 'en'; }
-
-  function updateBtn(){
-    var lang = getLang();
-    var other = lang === 'es' ? 'en' : 'es';
-    var otherUp = other.toUpperCase();
-    // Find the desktop nav language buttons (NOT inside mobile nav)
-    var btns = Array.from(document.querySelectorAll('a, button')).filter(function(el){
+  function fixBtns(){
+    var isEs = location.pathname.startsWith('/es');
+    // Point lang button to correct destination — don't change text (let Nuxt handle that)
+    var btns = Array.from(document.querySelectorAll('a')).filter(function(el){
       var txt = (el.textContent || '').trim().toUpperCase();
       return (txt === 'EN' || txt === 'ES') && !el.closest('.nav-mobile');
     });
     btns.forEach(function(el){
-      // Update href to point to the other language
-      var targetPath = other === 'es' ? '/es/' : '/en/';
-      if (el.tagName === 'A') el.setAttribute('href', targetPath);
-      // The button should show the OTHER language (where you CAN go)
-      if (el.textContent.trim().toUpperCase() !== otherUp) {
-        el.textContent = otherUp;
-      }
+      var dest = isEs ? '/en/' : '/es/';
+      el.setAttribute('href', dest);
     });
   }
 
-  // Run on load and on every route change (Vue Router uses history.pushState)
-  updateBtn();
-  var _pushState = history.pushState.bind(history);
-  history.pushState = function(){
-    _pushState.apply(history, arguments);
-    setTimeout(updateBtn, 100);
-  };
-  window.addEventListener('popstate', function(){ setTimeout(updateBtn, 100); });
-
-  // Also watch DOM mutations for Nuxt re-renders
-  var obs = new MutationObserver(function(){ updateBtn(); });
-  obs.observe(document.documentElement, { subtree: true, childList: true });
+  // Run after load + on route changes only
+  setTimeout(fixBtns, 500);
+  var _push = history.pushState.bind(history);
+  history.pushState = function(){ _push.apply(history, arguments); setTimeout(fixBtns, 300); };
+  window.addEventListener('popstate', function(){ setTimeout(fixBtns, 300); });
 })();
