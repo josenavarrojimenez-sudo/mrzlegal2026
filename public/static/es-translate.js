@@ -1,6 +1,5 @@
 (function(){
-  const MAX_BATCH_ITEMS = 40;
-  const MAX_BATCH_CHARS = 3500;
+  const MAX_BATCH_ITEMS = 50;
   const cache = window.__mrzTranslateCache || (window.__mrzTranslateCache = new Map());
   const pending = new Set();
 
@@ -8,6 +7,16 @@
     if (!node || !node.parentElement) return true;
     const tag = node.parentElement.tagName;
     return ['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','PATH'].includes(tag);
+  };
+
+  // Google unofficial translate endpoint — no widget, no API key, invisible
+  const googleTranslate = async (text) => {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=' + encodeURIComponent(text);
+    const resp = await fetch(url);
+    if (!resp.ok) return text;
+    const data = await resp.json();
+    if (data && data[0]) return data[0].map(s => s[0] || '').join('');
+    return text;
   };
 
   const collectItems = () => {
@@ -22,19 +31,13 @@
     while (walker.nextNode()) {
       const node = walker.currentNode;
       const raw = node.nodeValue || '';
-      // Preserve original spacing/line breaks by translating the full node value,
-      // but skip nodes that are only whitespace.
-      if (!raw.trim()) continue;
-      if (raw.trim().length < 2) continue;
-      items.push({ type: 'text', node, value: raw, raw });
+      if (!raw.trim() || raw.trim().length < 2) continue;
+      items.push({ type: 'text', node, value: raw.trim(), raw });
     }
-    const attrTargets = document.querySelectorAll('[title],[aria-label],[placeholder]');
-    attrTargets.forEach((el) => {
+    document.querySelectorAll('[title],[aria-label],[placeholder]').forEach((el) => {
       ['title','aria-label','placeholder'].forEach((attr) => {
         const value = el.getAttribute(attr);
-        if (value && value.trim().length > 1) {
-          items.push({ type: 'attr', node: el, attr, value: value.trim() });
-        }
+        if (value && value.trim().length > 1) items.push({ type: 'attr', node: el, attr, value: value.trim() });
       });
     });
     return items;
@@ -42,112 +45,54 @@
 
   const applyTranslation = (item, translated) => {
     if (!translated) return;
-    if (item.type === 'text') {
-      item.node.nodeValue = translated;
-      return;
-    }
-    if (item.type === 'attr') {
-      item.node.setAttribute(item.attr, translated);
-    }
+    if (item.type === 'text') item.node.nodeValue = translated;
+    else if (item.type === 'attr') item.node.setAttribute(item.attr, translated);
   };
 
-  const translateBatch = async (items) => {
+  const translateItems = async (items) => {
     const toTranslate = [];
     const mapping = new Map();
     items.forEach((item) => {
-      if (cache.has(item.value)) {
-        applyTranslation(item, cache.get(item.value));
-        return;
-      }
-      if (pending.has(item.value)) {
-        return;
-      }
+      if (cache.has(item.value)) { applyTranslation(item, cache.get(item.value)); return; }
+      if (pending.has(item.value)) return;
       pending.add(item.value);
-      if (!mapping.has(item.value)) {
-        mapping.set(item.value, []);
-        toTranslate.push(item.value);
-      }
+      if (!mapping.has(item.value)) { mapping.set(item.value, []); toTranslate.push(item.value); }
       mapping.get(item.value).push(item);
     });
     if (!toTranslate.length) return;
 
-    let index = 0;
-    while (index < toTranslate.length) {
-      let batch = [];
-      let total = 0;
-      while (index < toTranslate.length && batch.length < MAX_BATCH_ITEMS) {
-        const next = toTranslate[index];
-        if (total + next.length > MAX_BATCH_CHARS && batch.length) {
-          break;
-        }
-        batch.push(next);
-        total += next.length;
-        index += 1;
-      }
-
-      try {
-        const response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ strings: batch }),
-        });
-        if (!response.ok) {
-          return;
-        }
-        const data = await response.json();
-        const translations = data.translations || [];
-        translations.forEach((translated, idx) => {
-          const original = batch[idx];
+    // Translate in parallel batches of MAX_BATCH_ITEMS
+    for (let i = 0; i < toTranslate.length; i += MAX_BATCH_ITEMS) {
+      const batch = toTranslate.slice(i, i + MAX_BATCH_ITEMS);
+      await Promise.all(batch.map(async (original) => {
+        try {
+          const translated = await googleTranslate(original);
           cache.set(original, translated);
-          const list = mapping.get(original) || [];
-          list.forEach((item) => applyTranslation(item, translated));
-          pending.delete(original);
-        });
-      } catch (err) {
-        return;
-      }
+          (mapping.get(original) || []).forEach(item => applyTranslation(item, translated));
+        } catch(e) {}
+        pending.delete(original);
+      }));
     }
   };
 
-  const run = () => {
-    const items = collectItems();
-    translateBatch(items);
-    // Keep navigation within Spanish paths
+  const fixLinks = () => {
     document.querySelectorAll('a[href]').forEach((el) => {
       if (el.hasAttribute('data-lang-switch')) return;
       const href = el.getAttribute('href');
-      if (!href) return;
-      // Skip external links, anchors, and non-http protocols
-      if (/^(https?:)?\/\//i.test(href) || href.startsWith('#') || /^[a-zA-Z]+:/.test(href)) return;
-
-      // Normalize /en/* links to /es/*
-      if (href === '/en' || href === '/en/') {
-        el.setAttribute('href', '/es/');
-        return;
-      }
-      if (href.startsWith('/en/')) {
-        el.setAttribute('href', '/es/' + href.slice(4));
-        return;
-      }
-
-      // If link points to root, keep users in /es/
-      if (href === '/') {
-        el.setAttribute('href', '/es/');
-      }
+      if (!href || /^(https?:)?\/\//i.test(href) || href.startsWith('#') || /^[a-zA-Z]+:/.test(href)) return;
+      if (href === '/en' || href === '/en/') { el.setAttribute('href', '/es/'); return; }
+      if (href.startsWith('/en/')) { el.setAttribute('href', '/es/' + href.slice(4)); return; }
+      if (href === '/') el.setAttribute('href', '/es/');
     });
   };
 
-  let debounce;
-  const schedule = () => {
-    if (debounce) clearTimeout(debounce);
-    debounce = setTimeout(run, 400);
-  };
+  const run = () => { translateItems(collectItems()); fixLinks(); };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', schedule);
-  } else {
-    schedule();
-  }
+  let debounce;
+  const schedule = () => { if (debounce) clearTimeout(debounce); debounce = setTimeout(run, 400); };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
+  else schedule();
 
   const observer = new MutationObserver(schedule);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
